@@ -7,20 +7,21 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:project_shop/api.dart';
 
 import 'cart.dart';
 
 class OrderItem {
   final String id;
-  final double amount;
+  final amount;
+  final  datetime;
   final List<CartItem> products;
-  final DateTime dateTime;
 
   OrderItem({
     @required this.id,
+    @required this.datetime,
     @required this.amount,
     @required this.products,
-    @required this.dateTime,
   });
 }
 
@@ -35,20 +36,21 @@ class Orders with ChangeNotifier {
   }
 
   Future<void> fetchAndSetOrders() async {
-    final url =
-        'https://shopper-2636c-default-rtdb.firebaseio.com/orders.json?auth=$authToken&orderBy="UID"&equalTo="$userId"';
+    // final url =
+    //     'https://shopper-2636c-default-rtdb.firebaseio.com/orders.json?auth=$authToken&orderBy="UID"&equalTo="$userId"';
+    final url= "$domain${endPoint['orders']}?salesmanUID=$userId";
     final response = await http.get(url);
     final List<OrderItem> loadedOrders = [];
-    final extractedData = json.decode(response.body) as Map<String, dynamic>;
+    final extractedData = json.decode(response.body);
     if (extractedData == null) {
       return;
     }
-    extractedData.forEach((orderId, orderData) {
+    extractedData['orders'].forEach((orderData) {
       loadedOrders.add(
         OrderItem(
-          id: orderId,
+          id: orderData['_id'],
           amount: orderData['amount'],
-          dateTime: DateTime.parse(orderData['dateTime']),
+          datetime:orderData['datetime'],
           products: (orderData['products'] as List<dynamic>)
               .map(
                 (item) => CartItem(
@@ -67,31 +69,31 @@ class Orders with ChangeNotifier {
   }
 
   Future<void> addOrder(List<CartItem> cartProducts, double total) async {
-    final url =
-        'https://shopper-2636c-default-rtdb.firebaseio.com/orders.json?auth=$authToken';
-    final timestamp = DateTime.now();
+    // final url =
+    //     'https://shopper-2636c-default-rtdb.firebaseio.com/orders.json?auth=$authToken';
+    final url = '$domain${endPoint['orders']}';
     final response = await http.post(
       url,
       body: json.encode({
-        'UID': userId,
+        'salesmanUID': userId,
         'amount': total,
-        'dateTime': timestamp.toIso8601String(),
         'products': cartProducts
             .map((cp) => {
-                  'id': cp.id,
+                  'productId': cp.id,
                   'title': cp.title,
                   'quantity': cp.quantity,
                   'price': cp.price,
                 })
             .toList(),
       }),
+        headers: {'Content-Type': 'application/json'},
     );
     _orders.insert(
       0,
       OrderItem(
-        id: json.decode(response.body)['name'],
+        id: json.decode(response.body)['order']['_id'],
+        datetime:json.decode(response.body)['order']['datetime'] ,
         amount: total,
-        dateTime: timestamp,
         products: cartProducts,
       ),
     );

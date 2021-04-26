@@ -7,7 +7,7 @@ class CartItem {
   final String id;
   final String title;
   final int quantity;
-  final double price;
+  final  price;
 
   CartItem({
     @required this.id,
@@ -33,9 +33,10 @@ class Cart with ChangeNotifier {
   }
 
   double get totalAmount {
+    
     var total = 0.0;
     _items.forEach((key, cartItem) {
-      total += cartItem.price * cartItem.quantity;
+      total += double.parse(cartItem.price) * cartItem.quantity;
     });
     return total;
   }
@@ -48,7 +49,7 @@ class Cart with ChangeNotifier {
 
   void addItem(
     String productId,
-    double price,
+    final price,
     String title,
   ) {
     if (_items.containsKey(productId)) {

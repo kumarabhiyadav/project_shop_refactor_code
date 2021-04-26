@@ -6,7 +6,7 @@ import '../providers/cart.dart';
 class CartItem extends StatefulWidget {
   final String id;
   final String productId;
-  final double price;
+  final price;
   final int quantity;
   final String title;
 
@@ -91,7 +91,7 @@ class _CartItemState extends State<CartItem> {
               ),
             ),
             title: Text(widget.title),
-            subtitle: Text('Total: \₹${(widget.price * widget.quantity)}'),
+            subtitle: Text('Total: \₹${(double.parse(widget.price) * widget.quantity)}'),
             trailing: Container(
               width: 110,
               child: Row(

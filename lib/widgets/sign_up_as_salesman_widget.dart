@@ -2,6 +2,7 @@ import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:project_shop/models/http_exception.dart';
 import 'package:project_shop/providers/auth_provider.dart';
+import 'package:project_shop/widgets/login-and-register-page-helper.dart';
 import 'package:project_shop/widgets/login_widget.dart';
 import 'package:project_shop/widgets/sign_up_as_publisher_page_widget.dart';
 import 'package:provider/provider.dart';
@@ -20,7 +21,7 @@ class _SignUpAsSalesManWidgetState extends State<SignUpAsSalesManWidget> {
     'name': '',
     'email': '',
     'password': '',
-    'loaction': '',
+    'location': '',
     'sales': '',
     'contact': '',
   };
@@ -50,22 +51,25 @@ class _SignUpAsSalesManWidgetState extends State<SignUpAsSalesManWidget> {
         _isloading = true;
       });
       try {
-        await Provider.of<AuthProvider>(context, listen: false)
-            .signUpAsSalesman(
-          name: _initValue['name'],
-          email: _initValue['email'],
-          password: _initValue['password'],
-          location: _initValue['loaction'],
-          contact: _initValue['contact'],
-          sales: _initValue['sales'],
-        );
+
+          await Provider.of<AuthProvider>(context, listen: false).createUser(values: _initValue,role: "salesman");
+
+        // await Provider.of<AuthProvider>(context, listen: false)
+        //     .signUpAsSalesman(
+        //   name: _initValue['name'],
+        //   email: _initValue['email'],
+        //   password: _initValue['password'],
+        //   location: _initValue['loaction'],
+        //   contact: _initValue['contact'],
+        //   sales: _initValue['sales'],
+        // );
         setState(() {
           _isloading = false;
         });
         Navigator.of(context).pushReplacementNamed(LogInWidget.routeName);
       } on HttpException catch (error) {
         var errorMessage = 'Authentication failed';
-        if (error.toString().contains('EMAIL_EXISTS')) {
+        if (error.toString().contains('DUBLICATE_VALUE')) {
           errorMessage = 'This email address is already in use.';
         } else if (error.toString().contains('INVALID_EMAIL')) {
           errorMessage = 'This is not a valid email address';
@@ -116,199 +120,124 @@ class _SignUpAsSalesManWidgetState extends State<SignUpAsSalesManWidget> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Padding(
-                            padding:  EdgeInsets.only(left: width *0.025, top:height * 0.1),
-                            child: Text(
-                              'Sign-Up,',
-                              style: Theme.of(context).textTheme.headline3,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.all(width *0.025),
-                            child: Text(
-                              'As a Salesman',
-                              style: Theme.of(context).textTheme.headline6,
-                            ),
-                          ),
+                          AuthPageHeader(
+                              width: width, height: height, title: "Sign-Up,"),
+                          AuthHeaderSecText(
+                              width: width, title: 'As a Salesman')
                         ],
                       ),
                       Padding(
-                        padding:  EdgeInsets.symmetric(horizontal: width *0.025),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: width * 0.025),
                         child: Container(
-                          height:height * 0.5,
+                          height: height * 0.5,
                           width: double.infinity,
-                          child: Card(
-                            elevation: 5,
-                            child: ListView(
-                              // crossAxisAlignment: CrossAxisAlignment.start,
-                              // mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Padding(
-                                  padding:EdgeInsets.all(width *0.020),
-                                  child: Text(
-                                    "Name",
-                                    style:
-                                        Theme.of(context).textTheme.headline6,
-                                  ),
-                                ),
-                                Column(
-                                  children: [
-                                    Padding(
-                                      padding: EdgeInsets.all(width *0.025),
-                                      child: TextFormField(
-                                        decoration: InputDecoration(
-                                            hintText: 'Enter Your Name'),
-                                        textInputAction: TextInputAction.next,
-                                        validator: (val) {
-                                          if (val.isEmpty) {
-                                            return 'Field can not be Empty';
-                                          }
-                                          return null;
-                                        },
-                                        onSaved: (val) {
-                                          _initValue['name'] = val;
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.all(width *0.020),
-                                  child: Text(
-                                    "E-Mail",
-                                    style:
-                                        Theme.of(context).textTheme.headline6,
-                                  ),
-                                ),
-                                Padding(
-                                  padding:  EdgeInsets.all(width *0.020),
-                                  child: TextFormField(
-                                    decoration: InputDecoration(
-                                        hintText: 'Enter Your E-Mail'),
-                                    textInputAction: TextInputAction.next,
-                                    validator: (val) {
-                                      if (val.isEmpty) {
-                                        return 'Field can not be Empty';
-                                      }
-                                      if (!EmailValidator.validate(val)) {
-                                        return 'Please enter a valid email';
-                                      }
-                                      return null;
-                                    },
-                                    onSaved: (val) {
-                                      _initValue['email'] = val;
-                                    },
-                                  ),
-                                ),
-                                Padding(
-                                  padding:  EdgeInsets.all(width *0.020),
-                                  child: Text(
-                                    "Password",
-                                    style:
-                                        Theme.of(context).textTheme.headline6,
-                                  ),
-                                ),
-                                Padding(
-                                  padding:  EdgeInsets.all(width *0.020),
-                                  child: TextFormField(
-                                    decoration: InputDecoration(
-                                        hintText: 'Enter Your Password'),
-                                    textInputAction: TextInputAction.next,
-                                    obscureText: true,
-                                    validator: (val) {
-                                      if (val.isEmpty) {
-                                        return 'Field can not be Empty';
-                                      }
-                                      if (val.length <= 6) {
-                                        return 'Password Should be 6 Character long';
-                                      }
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                    offset: Offset(0, 10),
+                                    color: Colors.black45,
+                                    blurRadius: 10)
+                              ]),
+                          child: ListView(
+                            children: [
+                              AuthPageSubText(width: width, title: "Name"),
+                              userinputfields(
+                                  width: width,
+                                  hintText: "Enter Your Name",
+                                  validator: (val) {
+                                    if (val.isEmpty) {
+                                      return 'Field can not be Empty';
+                                    }
+                                    return null;
+                                  },
+                                  onSave: (val) {
+                                    _initValue['name'] = val;
+                                  },
+                                  obscureText: false),
+                              AuthPageSubText(width: width, title: "Email"),
+                              userinputfields(
+                                  width: width,
+                                  hintText: 'Enter Your Email-Id / Username',
+                                  validator: (val) {
+                                    if (val.isEmpty) {
+                                      return 'Field can not be Empty';
+                                    }
+                                    if (!EmailValidator.validate(val)) {
+                                      return 'Please enter a valid email';
+                                    }
+                                    return null;
+                                  },
+                                  onSave: (val) {
+                                    _initValue['email'] = val;
+                                  },
+                                  obscureText: false),
+                              AuthPageSubText(width: width, title: "Password"),
+                              userinputfields(
+                                  width: width,
+                                  hintText: 'Enter Your Password',
+                                  validator: (val) {
+                                    if (val.isEmpty) {
+                                      return 'Field can not be Empty';
+                                    }
+                                    if (val.length <= 6) {
+                                      return 'Password Should be 6 Character long';
+                                    }
 
-                                      return null;
-                                    },
-                                    onSaved: (val) {
-                                      _initValue['password'] = val;
-                                    },
-                                  ),
-                                ),
-                                Padding(
-                                  padding:  EdgeInsets.all(width *0.020),
-                                  child: Text(
-                                    "Loaction",
-                                    style:
-                                        Theme.of(context).textTheme.headline6,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.all(width *0.020),
-                                  child: TextFormField(
-                                    decoration: InputDecoration(
-                                        hintText: 'Enter Your Location'),
-                                    textInputAction: TextInputAction.next,
-                                    validator: (val) {
-                                      if (val.isEmpty) {
-                                        return 'Field can not be Empty';
-                                      }
-                                      return null;
-                                    },
-                                    onSaved: (val) {
-                                      _initValue['loaction'] = val;
-                                    },
-                                  ),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.all(width *0.020),
-                                  child: Text(
-                                    "Sales",
-                                    style:
-                                        Theme.of(context).textTheme.headline6,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.all(width *0.020),
-                                  child: TextFormField(
-                                    decoration: InputDecoration(
-                                        hintText:
-                                            'Enter Numbers of Product You sold'),
-                                    textInputAction: TextInputAction.next,
-                                    validator: (val) {
-                                      if (val.isEmpty) {
-                                        return 'Field can not be Empty';
-                                      }
-                                      return null;
-                                    },
-                                    onSaved: (val) {
-                                      _initValue['sales'] = val;
-                                    },
-                                  ),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.all(width *0.020),
-                                  child: Text(
-                                    "Contact",
-                                    style:
-                                        Theme.of(context).textTheme.headline6,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.all(width *0.020),
-                                  child: TextFormField(
-                                    decoration: InputDecoration(
-                                        hintText: 'Enter tour Contact Number'),
-                                    textInputAction: TextInputAction.next,
-                                    keyboardType: TextInputType.phone,
-                                    validator: (val) {
-                                      if (val.length <= 9) {
-                                        return 'Please Enter Valid Contact Number';
-                                      }
-                                      return null;
-                                    },
-                                    onSaved: (val) {
-                                      _initValue['contact'] = val;
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
+                                    return null;
+                                  },
+                                  onSave: (val) {
+                                    _initValue['password'] = val;
+                                  },
+                                  obscureText: true),
+                              AuthPageSubText(width: width, title: "Location"),
+                              userinputfields(
+                                width: width,
+                                hintText: 'Enter Your Location',
+                                validator: (val) {
+                                  if (val.isEmpty) {
+                                    return 'Field can not be Empty';
+                                  }
+                                  return null;
+                                },
+                                onSave: (val) {
+                                  _initValue['location'] = val;
+                                },
+                                obscureText: false,
+                              ),
+                              AuthPageSubText(width: width, title: "Sales"),
+                              userinputfields(
+                                width: width,
+                                hintText: "Enter Numbers of Product You sold",
+                                validator: (val) {
+                                  if (val.isEmpty) {
+                                    return 'Field can not be Empty';
+                                  }
+                                  return null;
+                                },
+                                onSave: (val) {
+                                  _initValue['sales'] = val;
+                                },
+                                obscureText: false,
+                              ),
+                              AuthPageSubText(
+                                  width: width, title: "Contact No."),
+                              userinputfields(
+                                width: width,
+                                hintText: "Enter Your Contact Number",
+                                obscureText: false,
+                                onSave: (val) {
+                                  _initValue['contact'] = val;
+                                },
+                                validator: (val) {
+                                  if (val.length <= 9) {
+                                    return 'Please Enter Valid Contact Number';
+                                  }
+                                  return null;
+                                },
+                              )
+                            ],
                           ),
                         ),
                       ),
@@ -356,6 +285,23 @@ class _SignUpAsSalesManWidgetState extends State<SignUpAsSalesManWidget> {
                 ),
               ),
       ),
+    );
+  }
+
+  Padding userinputfields(
+      {double width,
+      String hintText,
+      Function validator,
+      Function onSave,
+      bool obscureText}) {
+    return Padding(
+      padding: EdgeInsets.all(width * 0.025),
+      child: TextFormField(
+          decoration: InputDecoration(hintText: hintText),
+          textInputAction: TextInputAction.next,
+          validator: validator,
+          obscureText: obscureText,
+          onSaved: onSave),
     );
   }
 }

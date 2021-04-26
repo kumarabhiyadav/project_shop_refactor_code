@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:project_shop/api.dart';
 import 'dart:convert';
 
 import 'package:project_shop/models/http_exception.dart';
@@ -12,10 +13,10 @@ class AuthProvider with ChangeNotifier {
   String _token;
   DateTime _expiryDate;
   String _userId;
-  bool _ispublisher;
+  bool _ispublisher = false;
   Timer _authTimer;
   bool get isAuth {
-    if (token != null) {
+    if (_token != null) {
       return true;
     }
     return false;
@@ -24,36 +25,24 @@ class AuthProvider with ChangeNotifier {
   bool get ispublisher {
     return _ispublisher;
   }
-  
-   
+
   Future<bool> tryAutoLogin() async {
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey('userData')) {
       return false;
     }
-    final extractedUserData = json.decode(prefs.getString('userData')) as Map<String, Object>;
-    final expiryDate = DateTime.parse(extractedUserData['expiryDate']);
+    final extractedUserData =
+        json.decode(prefs.getString('userData')) as Map<String, Object>;
 
-    if (expiryDate.isBefore(DateTime.now())) {
-      return false;
-    }
     _token = extractedUserData['token'];
     _userId = extractedUserData['userId'];
-    _ispublisher=extractedUserData['ispublisher'];
-    _expiryDate = expiryDate;
+    _ispublisher = extractedUserData['ispublisher'];
+
     notifyListeners();
-    _autoLogout();
+
     return true;
   }
 
-  
-  void _autoLogout() {
-    if (_authTimer != null) {
-      _authTimer.cancel();
-    }
-    final timeToExpiry = _expiryDate.difference(DateTime.now()).inSeconds;
-    _authTimer = Timer(Duration(seconds: timeToExpiry), logout);
-  }
   Future<void> logout() async {
     _token = null;
     _userId = null;
@@ -64,30 +53,8 @@ class AuthProvider with ChangeNotifier {
     }
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
-    // prefs.remove('userData');
+    prefs.remove('userData');
     prefs.clear();
-  }
-
-
-  Future<bool> authRole() async {
-    String role;
-    try {
-      final url =
-          'https://shopper-2636c-default-rtdb.firebaseio.com/users.json?auth=$token&orderBy="UID"&equalTo="$userId"';
-      final response = await http.get(url);
-      final responseData = json.decode(response.body) as Map<String, dynamic>;
-      responseData.forEach((key, value) {
-        role = value['role'];
-      });
-
-      if (role == "publisher") {
-        return true;
-      }
-
-      return false;
-    } catch (e) {
-      throw e;
-    }
   }
 
   String get token {
@@ -105,35 +72,36 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> logInUser({String email, String password}) async {
     try {
-      final url =
-          'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyAU6AU6OSYiqGApqRSbuy9mNi4lB2SLuIw';
-
+      // final url =
+      //     'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyAU6AU6OSYiqGApqRSbuy9mNi4lB2SLuIw';
+      final url = "$domain" + "${endPoint['login']}";
       final response = await http.post(
         url,
         body: json.encode({
           'email': email,
           'password': password,
-          'returnSecureToken': true,
         }),
+        headers: {'Content-Type': 'application/json'},
       );
       final responseData = json.decode(response.body);
-      if (responseData['error'] != null) {
-        throw HttpException(responseData['error']['message']);
+      if (!responseData['success']) {
+        throw HttpException(responseData['error']);
       }
 
-      _token = responseData['idToken'];
-      _userId = responseData['localId'];
-      _expiryDate = DateTime.now()
-          .add(Duration(seconds: int.parse(responseData['expiresIn'])));
-      _ispublisher = await authRole();
+      _token = responseData['token'];
+      _userId = responseData['user']['_id'];
+
+      if (responseData['user']['role'] == 'publisher') {
+        _ispublisher = true;
+      }
+
       notifyListeners();
-       final prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       final userData = json.encode(
         {
           'token': _token,
           'userId': _userId,
-          'expiryDate': _expiryDate.toIso8601String(),
-          'ispublisher':_ispublisher,
+          'ispublisher': _ispublisher,
         },
       );
       prefs.setString('userData', userData);
@@ -143,123 +111,43 @@ class AuthProvider with ChangeNotifier {
   }
 
   //This Function Sign Up Publisher
-  Future<void> signUpAsPublisher({
-    String name,
-    String email,
-    String password,
-  }) async {
-    DateTime datetime = DateTime.now();
-    try {
-      final url =
-          'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAU6AU6OSYiqGApqRSbuy9mNi4lB2SLuIw';
-
-      final response = await http.post(
-        url,
-        body: json.encode({
-          'email': email,
-          'password': password,
-          'returnSecureToken': true,
-        }),
-      );
-      final responseData = json.decode(response.body);
  
-      if (responseData['error'] != null) {
-        throw HttpException(responseData['error']['message']);
-      }
-      //If try block does not throw error then this fuction save data of publisher to database
-      String userId = responseData['localId'];
-      String token = responseData['idToken'];
-
-      await _saveDetailesOfPublisher(userId,token, name, email, datetime); //Saving details of Publisher
-    } catch (error) {
-      throw error;
+  Future<void> createUser ({dynamic values, String role}) async{
+    var body;
+    if (role == "salesman") {
+      body = json.encode({
+        'email': values['email'],
+        'password': values['password'],
+        'name': values['name'],
+        'role': role,
+        'sales': values['sales'],
+        'contact': values['contact'],
+        'location': values['location']
+      });
     }
-  }
-
-// This Function will signUp SalesMan
-  Future<void> signUpAsSalesman({
-    String name,
-    String email,
-    String password,
-    String location,
-    String sales,
-    String contact,
-  }) async {
-    DateTime datetime = DateTime.now();
+    if (role == "publisher") {
+      body = json.encode({
+        'email': values['email'],
+        'password': values['password'],
+        'name': values['name'],
+        'role': role,
+      });
+    }
     try {
-      final url =
-          'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAU6AU6OSYiqGApqRSbuy9mNi4lB2SLuIw';
-
+      final url = "$domain" + "${endPoint['signup']}";
       final response = await http.post(
         url,
-        body: json.encode({
-          'email': email,
-          'password': password,
-          'returnSecureToken': true,
-        }),
+        body: body,
+        headers: {'Content-Type': 'application/json'},
       );
       final responseData = json.decode(response.body);
-
-      if (responseData['error'] != null) {
-        throw HttpException(responseData['error']['message']);
+        if (responseData['error'] != null) {
+        throw HttpException(responseData['error']);
       }
-      String userId = responseData['localId'];
-      String token = responseData['idToken'];
-      await _saveDetailesOfSalesman(
-          userid: userId,
-          token: token,
-          name: name,
-          email: email,
-          location: location,
-          sales: sales,
-          contact: contact,
-          dateTime: datetime);
     } catch (error) {
       throw error;
     }
   }
 
-// This Function runs  after sign Up as new Publisher and save data according User id return from response
-  Future<void> _saveDetailesOfPublisher(
-      String userid,String token, String name, String email, DateTime dateTime) async {
-    final url = 'https://shopper-2636c-default-rtdb.firebaseio.com/users.json?auth=$token';
-    await http.post(
-      url,
-      body: json.encode({
-        'UID': userid,
-        'name': name,
-        'email': email,
-        'role': 'publisher',
-        'created_At': dateTime.toIso8601String(),
-      }),
-    );
-  }
-}
-// This Function runs  after sign Up as new Salesman and save data according User id return from response
 
-Future<void> _saveDetailesOfSalesman(
-    {String userid,
-    String token,
-    String name,
-    String email,
-    String location,
-    String sales,
-    String contact,
-    DateTime dateTime}) async {
-  final url = 'https://shopper-2636c-default-rtdb.firebaseio.com/users.json?auth=$token';
-  await http.post(
-    url,
-    body: json.encode({
-      'UID': userid,
-      'name': name,
-      'email': email,
-      'loaction': location,
-      'sales': sales,
-      'contact': contact,
-      'role': 'Salesman',
-      'date': dateTime.toIso8601String(),
-    }),
-  );
-  
 }
-

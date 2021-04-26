@@ -26,7 +26,7 @@ class _OrderItemWidgetState extends State<OrderItemWidget> {
           ListTile(
             title: Text('\₹${widget.order.amount}'),
             subtitle: Text(
-              DateFormat('dd/MM/yyyy hh:mm').format(widget.order.dateTime),
+              DateFormat('dd/MM/yyyy hh:mm').format(DateTime.parse(widget.order.datetime)),
             ),
             trailing: IconButton(
               icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),

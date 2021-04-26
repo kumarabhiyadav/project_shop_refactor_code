@@ -2,8 +2,10 @@
     package="com.example.project_shop">
      <uses-permission android:name="android.permission.INTERNET" />
    <application
+        android:usesCleartextTraffic="true"
         android:label="project_shop"
         android:icon="@mipmap/ic_launcher">
+      
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

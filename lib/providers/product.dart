@@ -5,7 +5,7 @@ class Product with ChangeNotifier {
   final String id;
   final String title;
   final String description;
-  final double price;
+  final  price;
   final String imageUrl;
   final String publisherid;
   final invitations;
